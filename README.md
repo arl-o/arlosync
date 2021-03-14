@@ -1,7 +1,7 @@
 arlosync
 ========
 
-Toy rsync-like library for keeping two directories in sync.
+Toy [rsync](https://rsync.samba.org/~tridge/phd_thesis.pdf)-like library for keeping two directories in sync.
 
 Features:
 

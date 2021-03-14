@@ -1,0 +1,4 @@
+grpcio>=1.35.0
+grpcio-tools>=1.35.0
+pytest>=6.2.2
+sortedcontainers>=2.3.0

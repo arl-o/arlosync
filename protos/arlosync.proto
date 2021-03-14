@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package arlosync;
+
+// RPC server of the sync client.
+service SyncClient {
+  // Returns an ordered stream of literal bytes and tokens which can be used to
+  // reconstruct the client's version of the specified file. Returns status code
+  // `NOT_FOUND` if the file is not in the client directory.
+  rpc GetBytesAndTokensForFile(FileAndTokens) returns(stream BytesAndTokens) {}
+
+  // Returns an ordered stream of literal bytes and tokens which can be used to
+  // reconstruct the client's `DirectoryDescriptor` proto.
+  rpc GetBytesAndTokensForDirectoryDescriptor(FileAndTokens) returns(stream BytesAndTokens) {}
+}
+
+// Metadata about a directory, usually that owned by the server or client.
+message DirectoryDescriptor {
+  repeated FileDescriptor file_descriptors = 1;
+  // Directory paths relative to the synced directory.
+  repeated string sub_directories = 2;
+}
+
+// Metadata about a specific file, usually one owned by the server or client.
+message FileDescriptor {
+  // Relative to the synced directory.
+  string path = 1;
+  // File size in bytes.
+  int64 filesize = 2;
+  // When-modified timestamp, such as that recorded in `os.stat().st_mtime`.
+  double mtime = 3;
+}
+
+// Data about the server's view of a particular file (or buffer).
+message FileAndTokens {
+  // Relative to the synced directory.
+  string path = 1;
+  // Adler32 checksums which can quickly be used to check if more expensive hash
+  // comparisons are required.
+  repeated uint32 checksums = 2;
+  // Blake2s hash tokens which represent a window of `<=chunk_size` bytes in the
+  // file being syncronized.
+  repeated bytes hash_tokens = 3;
+  // Size of the window of bytes to compare with `hash_tokens` and `checksums.`
+  int64 chunk_size = 4;
+}
+
+// Data which can be used by the server to reconstruct a part of the client's
+// version of a particular file (or buffer). Streamed in order.
+message BytesAndTokens {
+  oneof bytes_or_tokens_oneof {
+    // Literal bytes to be written to the target file (or buffer).
+    bytes literal_bytes = 1;
+    // A blake2s hash token which can be used by the server to refrence an
+    // existing part of a file (or buffer).
+    HashTokens hash_tokens = 2;
+  }
+}
+
+message HashTokens {
+  repeated bytes tokens = 1;
+}
+
+/* python -m grpc_tools.protoc  --python_out=arlosync/protos --grpc_python_out=arlosync/protos --proto_path=arlosync/protos arlosync/protos/arlosync.proto */
